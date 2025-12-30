@@ -1,10 +1,17 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { Button } from "./ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { useState } from "react";
+
+const formSchema = z.object({
+  username: z.string().min(2).max(50),
+  email: z.email(),
+});
+
+import { Button } from "~/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,64 +19,58 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
-import { Input } from "./ui/input";
+} from "~/components/ui/form";
+import { Input } from "~/components/ui/input";
 import { createUser, updateUser } from "~/actions/users";
-import { useState } from "react";
-import { LoaderIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { User } from "~/db/schema";
-
-const formSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-  email: z.email(),
-});
-
-type UserFormValues = z.infer<typeof formSchema>;
 
 interface UserFormProps {
   user?: User;
 }
 
-function UserForm({ user }: UserFormProps) {
-  const [loading, setLoading] = useState(false);
+export default function UserForm({ user }: UserFormProps) {
   const router = useRouter();
-
-  const form = useForm<UserFormValues>({
+  const [isLoading, setIsLoading] = useState(false);
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: user?.username ?? "",
-      email: user?.email ?? "",
+      username: user?.username || "",
+      email: user?.email || "",
     },
   });
 
-  const onSubmit = async (values: UserFormValues) => {
-    setLoading(true);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
 
     try {
       const userData = {
         ...values,
-        password: "defaultPassword123", // Placeholder password
+        password: "password123",
       };
 
       if (user) {
-        await updateUser({ id: user.id, ...userData });
+        await updateUser({
+          ...userData,
+          id: user.id,
+        });
       } else {
         await createUser(userData);
+        form.reset();
       }
 
-      form.reset();
-      toast.success(`User ${user ? "updated" : "created"} successfully!`);
+      toast.success(`User ${user ? "updated" : "added"} successfully`);
       router.refresh();
+      setIsLoading(false);
     } catch (error) {
-      toast.error(`Failed to ${user ? "update" : "create"} user: ${error}`);
+      console.error(error);
+      toast.error(`Failed to ${user ? "update" : "add"} user`);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  };
+  }
 
   return (
     <Form {...form}>
@@ -81,9 +82,8 @@ function UserForm({ user }: UserFormProps) {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} />
+                <Input placeholder="Bruce Wayne" {...field} />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}
@@ -96,19 +96,21 @@ function UserForm({ user }: UserFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn@example.com" {...field} />
+                <Input placeholder="bruce@wayne.com" {...field} />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={loading}>
-          {loading ? <LoaderIcon className="size-4 animate-spin" /> : "Submit"}
+
+        <Button disabled={isLoading} type="submit">
+          {isLoading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            `${user ? "Update" : "Add"} User`
+          )}
         </Button>
       </form>
     </Form>
   );
 }
-
-export default UserForm;
