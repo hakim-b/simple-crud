@@ -1,6 +1,4 @@
-import { config } from "dotenv";
-import { drizzle } from "drizzle-orm/mysql2";
+import 'dotenv/config';
+import { drizzle } from 'drizzle-orm/libsql';
 
-config({ path: ".env" }); // or .env.local
-
-export const db = drizzle(process.env.DATABASE_URL!);
+export const db = drizzle(process.env.DB_FILE_NAME!);
