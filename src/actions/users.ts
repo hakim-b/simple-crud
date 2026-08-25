@@ -20,7 +20,6 @@ export async function createUser(
     await db.insert(users).values({
       email: user.email,
       username: user.username,
-      password: user.password,
     });
   } catch (error) {
     throw error;
@@ -34,7 +33,6 @@ export async function updateUser(user: Omit<User, "createdAt" | "updatedAt">) {
       .set({
         email: user.email,
         username: user.username,
-        password: user.password,
       })
       .where(eq(users.id, user.id));
   } catch (error) {
